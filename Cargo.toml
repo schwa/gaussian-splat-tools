@@ -1,0 +1,14 @@
+[package]
+name = "gaussian-splat-tools"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.86"
+bytemuck = { version = "1.16.0" }
+byteorder = "1.5.0"
+clap = { version = "4.5.7", features = ["derive"] }
+derive-new = "0.6.0"
+half = "2.4.1"
+nalgebra = "0.32.6"
+ply-rs = "0.1.3"
