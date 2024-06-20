@@ -79,15 +79,11 @@ impl SplatFormat for SplatC {
     }
 
     fn save(splats: &[SplatC], path: &Path) -> Result<()> {
-        // Open the file in write mode
         let mut file = File::create(path)?;
-
-        // Iterate over each splat and write it to the file
         for splat in splats {
             let bytes: &[u8] = bytemuck::bytes_of(splat);
             file.write_all(bytes)?;
         }
-
         Ok(())
     }
 }

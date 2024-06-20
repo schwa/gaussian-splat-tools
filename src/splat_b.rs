@@ -5,6 +5,8 @@ use bytemuck::{Pod, Zeroable};
 use derive_new::new as New;
 use nalgebra::{Quaternion, Vector3, Vector4};
 use std::path::Path;
+use std::fs::File;
+use std::io::Write;
 
 #[repr(C)]
 #[derive(Debug, Clone, New, Copy)]
@@ -52,7 +54,7 @@ impl SplatFormat for SplatB {
     fn is_format(path: &Path) -> FormatResult {
         if !path.exists() {
             let extension = path.extension().unwrap().to_str().unwrap();
-            if extension == "splatb" {
+            if extension == "splat" {
                 return FormatResult::Maybe(Some(0.666));
             }
             return FormatResult::No(format!("Extension is not splatb"));
@@ -73,8 +75,13 @@ impl SplatFormat for SplatB {
         SplatB::load_fast(path)
     }
 
-    fn save(_splats: &[SplatB], _path: &Path) -> Result<()> {
-        panic!("Not implemented");
+    fn save(splats: &[SplatB], path: &Path) -> Result<()> {
+        let mut file = File::create(path)?;
+        for splat in splats {
+            let bytes: &[u8] = bytemuck::bytes_of(splat);
+            file.write_all(bytes)?;
+        }
+        Ok(())
     }
 }
 
