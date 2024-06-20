@@ -1,4 +1,4 @@
-# TODO
+# gaussian-splat-tools
 
 ## Installation
 
