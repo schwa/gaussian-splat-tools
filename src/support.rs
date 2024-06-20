@@ -3,6 +3,7 @@ use half::f16;
 use nalgebra::{Quaternion, Vector3, Vector4};
 use std::io::{self, Read};
 
+#[allow(dead_code)]
 pub fn read_vector3_f16<R: Read>(reader: &mut R) -> io::Result<Vector3<f16>> {
     Ok(Vector3::new(
         f16::from_bits(reader.read_u16::<LittleEndian>().unwrap()),
@@ -11,6 +12,7 @@ pub fn read_vector3_f16<R: Read>(reader: &mut R) -> io::Result<Vector3<f16>> {
     ))
 }
 
+#[allow(dead_code)]
 pub fn read_vector4_f16<R: Read>(reader: &mut R) -> io::Result<Vector4<f16>> {
     Ok(Vector4::new(
         f16::from_bits(reader.read_u16::<LittleEndian>().unwrap()),
@@ -37,6 +39,7 @@ pub fn read_vector4_u8<R: Read>(reader: &mut R) -> io::Result<Vector4<u8>> {
     ))
 }
 
+#[allow(dead_code)]
 pub fn vector3_from_f32(v: Vector3<f32>) -> Vector3<f16> {
     Vector3::new(f16::from_f32(v.x), f16::from_f32(v.y), f16::from_f32(v.z))
 }
@@ -46,6 +49,7 @@ pub fn vector3_from_f16(v: Vector3<f16>) -> Vector3<f32> {
     Vector3::new(v.x.to_f32(), v.y.to_f32(), v.z.to_f32())
 }
 
+#[allow(dead_code)]
 pub fn vector4_from_f32(v: Vector4<f32>) -> Vector4<f16> {
     Vector4::new(
         f16::from_f32(v.x),
@@ -60,6 +64,7 @@ pub fn vector4_from_f16(v: Vector4<f16>) -> Vector4<f32> {
     Vector4::new(v.x.to_f32(), v.y.to_f32(), v.z.to_f32(), v.w.to_f32())
 }
 
+#[allow(dead_code)]
 pub fn quaternion_from_u8(rotation: Vector4<u8>) -> Quaternion<f32> {
     Quaternion::new(
         (rotation[1] as f32 / 255.0) - 0.5,
@@ -69,6 +74,7 @@ pub fn quaternion_from_u8(rotation: Vector4<u8>) -> Quaternion<f32> {
     )
 }
 
+#[allow(dead_code)]
 pub fn color_and_alpha_from_u8(color: Vector4<u8>) -> (Vector3<f32>, f32) {
     let alpha = color[3] as f32 / 255.0;
     let color = Vector3::new(
@@ -79,6 +85,7 @@ pub fn color_and_alpha_from_u8(color: Vector4<u8>) -> (Vector3<f32>, f32) {
     (color, alpha)
 }
 
+#[allow(dead_code)]
 pub fn srgb_to_linear(rgb: Vector3<f32>) -> Vector3<f32> {
     rgb.map(|v| v.powf(2.2))
 }

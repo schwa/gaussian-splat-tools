@@ -1,12 +1,7 @@
-// use half::f16;
-// use nalgebra::{Vector3, Vector4, UnitQuaternion, Quaternion};
 use crate::*;
 use anyhow::Result;
 use derive_new::new as New;
-use std::{
-    cmp::{self},
-    path::Path,
-};
+use std::path::Path;
 
 #[derive(Debug, Clone, New)]
 pub struct SplatDefinition {
@@ -74,43 +69,26 @@ pub enum FormatResult {
 }
 
 pub trait SplatFormat {
-    type BinarySplat;
-
     fn definition() -> SplatDefinition;
 
     fn is_format(path: &Path) -> FormatResult;
-    fn load(path: &Path) -> Result<Vec<Self::BinarySplat>>;
-    fn save(splats: &[Self::BinarySplat], path: &Path) -> Result<()>;
+    fn load(path: &Path) -> Result<Vec<UberSplat>>;
+    fn save(splats: &[UberSplat], path: &Path) -> Result<()>;
 }
 
-#[derive(Debug)]
-pub enum SplatFormats {
-    SplatB,
-    SplatC,
-}
-
-pub fn guess_format(path: &Path) -> Option<SplatFormats> {
-    let mut ordered_results = vec![
-        (SplatFormats::SplatB, SplatB::is_format(path)),
-        (SplatFormats::SplatC, SplatC::is_format(path)),
-    ];
-
-    ordered_results.sort_by(|a, b| match (&a.1, &b.1) {
-        (FormatResult::Yes, FormatResult::Yes) => cmp::Ordering::Equal,
-        (FormatResult::Yes, _) => cmp::Ordering::Less,
-        (_, FormatResult::Yes) => cmp::Ordering::Greater,
-        (FormatResult::Maybe(a), FormatResult::Maybe(b)) => a.partial_cmp(b).unwrap(),
-        (FormatResult::Maybe(_), _) => cmp::Ordering::Less,
-        (_, FormatResult::Maybe(_)) => cmp::Ordering::Greater,
-        (FormatResult::No(a), FormatResult::No(b)) => a.cmp(b),
-    });
-
-    for (format, result) in ordered_results {
-        match result {
-            FormatResult::Yes => return Some(format),
-            FormatResult::Maybe(_) => return Some(format),
-            _ => (),
-        }
+pub fn load_splats(path: &Path) -> Result<Vec<UberSplat>> {
+    let format = guess_format(path).unwrap();
+    match format {
+        SplatFormats::SplatA => SplatA::load(path),
+        SplatFormats::SplatB => SplatB::load(path),
+        SplatFormats::SplatC => SplatC::load(path),
     }
-    None
+}
+
+pub fn save_splats(splats: Vec<UberSplat>, format: SplatFormats, path: &Path) -> Result<()> {
+    match format {
+        SplatFormats::SplatA => SplatA::save(&splats, path),
+        SplatFormats::SplatB => SplatB::save(&splats, path),
+        SplatFormats::SplatC => SplatC::save(&splats, path),
+    }
 }

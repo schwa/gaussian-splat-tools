@@ -1,6 +1,7 @@
 use crate::*;
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
+use core::panic;
 use derive_new::new as New;
 use half::f16;
 use nalgebra::{Vector3, Vector4};
@@ -28,8 +29,6 @@ fn test_splat_c_size() {
 }
 
 impl SplatFormat for SplatC {
-    type BinarySplat = SplatC;
-
     fn definition() -> SplatDefinition {
         SplatDefinition::new(vec![
             Property::new("position".to_string(), false, Storage::Half3),
@@ -43,10 +42,9 @@ impl SplatFormat for SplatC {
         if !path.exists() {
             let extension = path.extension().unwrap().to_str().unwrap();
             if extension == "splatc" {
-                println!("Maybe");
                 return FormatResult::Maybe(Some(0.333));
             }
-            return FormatResult::No(format!("Extension is not splatc"));
+            return FormatResult::No("Extension is not splatc".to_string());
         }
 
         let size = std::fs::metadata(path).unwrap().len();
@@ -60,30 +58,47 @@ impl SplatFormat for SplatC {
         }
     }
 
-    fn load(path: &Path) -> Result<Vec<SplatC>> {
-        let data = std::fs::read(path)?;
-        let chunk_size = SplatC::definition().size();
-        let splats = data
-            .chunks_exact(chunk_size)
-            .map(|chunk| {
-                let mut reader = std::io::Cursor::new(chunk);
-                SplatC {
-                    position: read_vector3_f16(&mut reader).unwrap(),
-                    color: read_vector4_f16(&mut reader).unwrap(),
-                    cov_a: read_vector3_f16(&mut reader).unwrap(),
-                    cov_b: read_vector3_f16(&mut reader).unwrap(),
-                }
-            })
-            .collect();
-        Ok(splats)
+    fn load(_: &Path) -> Result<Vec<UberSplat>> {
+        panic!("Not implemented");
     }
 
-    fn save(splats: &[SplatC], path: &Path) -> Result<()> {
+    fn save(splats: &[UberSplat], path: &Path) -> Result<()> {
         let mut file = File::create(path)?;
         for splat in splats {
-            let bytes: &[u8] = bytemuck::bytes_of(splat);
+            let splat: SplatC = splat.clone().into();
+            let bytes: &[u8] = bytemuck::bytes_of(&splat);
             file.write_all(bytes)?;
         }
         Ok(())
+    }
+}
+
+impl From<UberSplat> for SplatC {
+    fn from(uber_splat: UberSplat) -> Self {
+        let position = Vector3::new(
+            f16::from_f32(uber_splat.position.x),
+            f16::from_f32(uber_splat.position.y),
+            f16::from_f32(uber_splat.position.z),
+        );
+        let rgb = uber_splat.color.to_linear_float();
+        let alpha = uber_splat.opacity.to_linear_float();
+        let color = Vector4::new(
+            f16::from_f32(rgb.x),
+            f16::from_f32(rgb.y),
+            f16::from_f32(rgb.z),
+            f16::from_f32(alpha),
+        );
+        let cov = uber_splat.to_cov();
+        let cov_a = Vector3::new(
+            f16::from_f32(cov.0.x),
+            f16::from_f32(cov.0.y),
+            f16::from_f32(cov.0.z),
+        );
+        let cov_b = Vector3::new(
+            f16::from_f32(cov.1.x),
+            f16::from_f32(cov.1.y),
+            f16::from_f32(cov.1.z),
+        );
+        SplatC::new(position, color, cov_a, cov_b)
     }
 }
