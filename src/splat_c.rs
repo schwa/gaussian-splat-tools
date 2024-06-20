@@ -40,6 +40,15 @@ impl SplatFormat for SplatC {
     }
 
     fn is_format(path: &Path) -> FormatResult {
+        if !path.exists() {
+            let extension = path.extension().unwrap().to_str().unwrap();
+            if extension == "splatc" {
+                println!("Maybe");
+                return FormatResult::Maybe(Some(0.333));
+            }
+            return FormatResult::No(format!("Extension is not splatc"));
+        }
+
         let size = std::fs::metadata(path).unwrap().len();
         if size % SplatC::definition().size() as u64 == 0 {
             FormatResult::Maybe(Some(0.666))

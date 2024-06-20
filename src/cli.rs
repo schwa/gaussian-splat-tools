@@ -44,8 +44,14 @@ impl Cli {
     }
 
     fn convert(input: PathBuf, output: PathBuf) -> Result<()> {
-        let input_format = guess_format(&input).unwrap();
-        let output_format = guess_format(&output).unwrap();
+        let Some(input_format) = guess_format(&input) else {
+            println!("Could not guess input format");
+            return Ok(());
+        };
+        let Some(output_format) = guess_format(&output) else {
+            println!("Could not guess output format");
+            return Ok(());
+        };
         match (input_format, output_format) {
             (SplatFormats::SplatB, SplatFormats::SplatC) => {
                 println!("Converting SplatB to SplatC...");
