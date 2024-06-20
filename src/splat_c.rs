@@ -1,4 +1,4 @@
-use crate::splat_format::*;
+use crate::*;
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
 use derive_new::new as New;
@@ -8,7 +8,7 @@ use std::fs::File;
 use std::io::Write;
 use std::path::Path;
 
-#[repr(C, packed)]
+#[repr(C)]
 #[derive(Debug, Clone, New, Copy)]
 pub struct SplatC {
     pub position: Vector3<f16>,
@@ -51,8 +51,22 @@ impl SplatFormat for SplatC {
         }
     }
 
-        fn load(_path: &Path) -> Result<Vec<SplatC>> {
-        panic!("Not implemented");
+    fn load(path: &Path) -> Result<Vec<SplatC>> {
+        let data = std::fs::read(path)?;
+        let chunk_size = SplatC::definition().size();
+        let splats = data
+            .chunks_exact(chunk_size)
+            .map(|chunk| {
+                let mut reader = std::io::Cursor::new(chunk);
+                SplatC {
+                    position: read_vector3_f16(&mut reader).unwrap(),
+                    color: read_vector4_f16(&mut reader).unwrap(),
+                    cov_a: read_vector3_f16(&mut reader).unwrap(),
+                    cov_b: read_vector3_f16(&mut reader).unwrap(),
+                }
+            })
+            .collect();
+        Ok(splats)
     }
 
     fn save(splats: &[SplatC], path: &Path) -> Result<()> {

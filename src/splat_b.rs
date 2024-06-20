@@ -3,7 +3,7 @@ use crate::support::*;
 use anyhow::Result;
 use bytemuck::{Pod, Zeroable};
 use derive_new::new as New;
-use nalgebra::{Vector3, Vector4};
+use nalgebra::{Quaternion, Vector3, Vector4};
 use std::path::Path;
 
 #[repr(C)]
@@ -17,6 +17,18 @@ pub struct SplatB {
 
 unsafe impl Zeroable for SplatB {}
 unsafe impl Pod for SplatB {}
+
+#[repr(C)]
+#[derive(Debug, Clone, New, Copy)]
+pub struct SplatBAlt {
+    pub position: Vector3<f32>,
+    pub scale: Vector3<f32>,
+    pub color: Vector4<u8>,
+    pub rotation: Quaternion<f32>, // Quaternion stored w, x, y, z.
+}
+
+unsafe impl Zeroable for SplatBAlt {}
+unsafe impl Pod for SplatBAlt {}
 
 #[cfg(test)]
 #[test]
