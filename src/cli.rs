@@ -1,10 +1,13 @@
 use crate::*;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use humansize::{format_size, DECIMAL};
+use nalgebra::{Vector3};
 use ply_rs as ply;
 use ply_rs::writer::Writer;
 use rand::prelude::*;
 use std::path::{Path, PathBuf};
+use strum::IntoEnumIterator;
 use tabled::builder::Builder;
 use tabled::{settings::Style, Table};
 
@@ -17,10 +20,16 @@ pub struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
+    /// List the formats supported by this tool
+    Formats {},
+
+    /// Get info about a gaussian splat file
     Info {
         #[arg(short, long)]
         input: PathBuf,
     },
+
+    /// Convert a gaussian splat file to another format
     Convert {
         #[arg(short, long)]
         input: PathBuf,
@@ -28,10 +37,14 @@ enum Commands {
         #[arg(short, long)]
         output: PathBuf,
     },
+
+    /// Guess the format of a gaussian splat file
     GuessFormat {
         #[arg(short, long)]
         input: PathBuf,
     },
+
+    /// Reduce the number of splats in a gaussian splat file
     Reduce {
         #[arg(short, long)]
         input: PathBuf,
@@ -43,6 +56,7 @@ enum Commands {
         limit: usize,
     },
 
+    /// Shuffle the splats in a gaussian splat file
     Shuffle {
         #[arg(short, long)]
         input: PathBuf,
@@ -51,11 +65,13 @@ enum Commands {
         output: PathBuf,
     },
 
+    /// Dump the splats in a gaussian splat file
     Dump {
         #[arg(short, long)]
         input: PathBuf,
     },
 
+    /// Convert a ply file to ascii
     PlyToAscii {
         #[arg(short, long)]
         input: PathBuf,
@@ -64,6 +80,7 @@ enum Commands {
         output: PathBuf,
     },
 
+    /// Dump a ply file
     DumpPly {
         #[arg(short, long)]
         input: PathBuf,
@@ -74,6 +91,12 @@ impl Cli {
     pub fn main() -> Result<()> {
         let args = Cli::parse();
         match args.command {
+            Some(Commands::Formats {}) => {
+                println!("Supported formats:");
+                for format in SplatFormats::iter() {
+                    println!("{:?}: {}", format, format.description());
+                }
+            }
             Some(Commands::Info { input }) => {
                 Cli::info(input)?;
             }
@@ -125,9 +148,41 @@ impl Cli {
 
     fn info(input: PathBuf) -> Result<()> {
         let format = guess_format(&input).unwrap();
-        println!("Format: {:?}", format);
+        println!("Format: {:?} / {}", format, format.description());
+        // print file size
+        let metadata = std::fs::metadata(&input)?;
+        let size = metadata.len();
+        println!("Size: {}", format_size(size, DECIMAL));
         let splats = load_splats(&input)?;
-        println!("Splats: {}", splats.len());
+        println!("# Splats: {}", splats.len());
+
+        let positions = splats
+            .iter()
+            .map(|splat| splat.position)
+            .collect::<Vec<Vector3<f32>>>();
+        let mut min_position = positions[0];
+        let mut max_position = positions[0];
+        let mut sum_position = Vector3::new(0.0, 0.0, 0.0);
+
+        for position in positions {
+            min_position = Vector3::new(
+                min_position.x.min(position.x),
+                min_position.y.min(position.y),
+                min_position.z.min(position.z),
+            );
+            max_position = Vector3::new(
+                max_position.x.max(position.x),
+                max_position.y.max(position.y),
+                max_position.z.max(position.z),
+            );
+            sum_position += position;
+        }
+
+        let avg_position = sum_position / splats.len() as f32;
+        println!("Min position: {:?}", min_position);
+        println!("Max position: {:?}", max_position);
+        println!("Avg position: {:?}", avg_position);
+
         Ok(())
     }
 

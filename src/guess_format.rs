@@ -1,17 +1,26 @@
-// use half::f16;
-// use nalgebra::{Vector3, Vector4, UnitQuaternion, Quaternion};
 use crate::*;
+use strum::EnumIter;
 
 use std::{
     cmp::{self},
     path::Path,
 };
 
-#[derive(Debug)]
+#[derive(Debug, EnumIter)]
 pub enum SplatFormats {
     SplatA,
     SplatB,
     SplatC,
+}
+
+impl SplatFormats {
+    pub fn description(&self) -> &'static str {
+        match self {
+            SplatFormats::SplatA => "The original `.ply` based splat format as defined by - <https://repo-sam.inria.fr/fungraph/3d-gaussian-splatting/> - with optional normals and spherical harmonics. XXX bytes pers splat.",
+            SplatFormats::SplatB => "`.splat` format as used by antimatter15's splat viewer: <https://github.com/antimatter15/splat>. 32 bytes per splat.",
+            SplatFormats::SplatC => "`.splatc` half float format as defined by Sean Cier's MetalSplatter <https://github.com/scier/MetalSplatter> project. 26 bytes per splat.",
+        }
+    }
 }
 
 pub fn guess_format(path: &Path) -> Option<SplatFormats> {
