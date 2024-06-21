@@ -65,6 +65,14 @@ enum Commands {
         output: PathBuf,
     },
 
+    Center {
+        #[arg(short, long)]
+        input: PathBuf,
+
+        #[arg(short, long)]
+        output: PathBuf,
+    },
+
     /// Dump the splats in a gaussian splat file
     Dump {
         #[arg(short, long)]
@@ -114,8 +122,14 @@ impl Cli {
                 Cli::reduce(input, output, limit).unwrap();
             }
             Some(Commands::Shuffle { input, output }) => {
-                Cli::shuffle(input, output, 100).unwrap();
+                Cli::shuffle(input, output).unwrap();
             }
+            Some(Commands::Center { input, output }) => {
+                modify_splats(&input, &output, |splats| {
+                    center_splats(splats);
+                })?;
+            }
+
             Some(Commands::Dump { input }) => {
                 Cli::dump(input)?;
             }
@@ -206,21 +220,17 @@ impl Cli {
         Ok(())
     }
 
-    fn shuffle(input: PathBuf, output: PathBuf, limit: usize) -> Result<()> {
-        let mut splats = load_splats(&input)?;
-        splats.shuffle(&mut thread_rng());
-        splats.truncate(limit);
-        let output_format = guess_format(&output).unwrap();
-        save_splats(splats, output_format, &output)?;
-        Ok(())
+    fn shuffle(input: PathBuf, output: PathBuf) -> Result<()> {
+        modify_splats(&input, &output, |splats| {
+            let mut rng = thread_rng();
+            splats.shuffle(&mut rng);
+        })
     }
 
     fn dump(input: PathBuf) -> Result<()> {
         let splats = load_splats(&input)?;
-
         let table = Table::new(splats).with(Style::modern()).to_string();
         println!("{}", table);
-
         Ok(())
     }
 
@@ -281,31 +291,25 @@ impl Cli {
                     .collect();
                 builder.push_record(&values);
             }
-            // println!("{}", table);
-
-            // for (property, _) in &element_def.properties {
-
-            //     let values: Vec<String> = ply.payload.get(element).unwrap().iter().map(|payload| {
-            //         let value = format!("{:?}", payload.get(property).unwrap());
-            //         value
-            //     }).collect();
-            //     // builder.push_record(&values);
-
-            //     println!("{} {:?}", values.len(), values);
-
-            // }
-
             let mut table = builder.build();
             table.with(Style::rounded());
             println!("{}", table);
         }
-
         Ok(())
     }
+
 }
 
 fn save_to_json(splats: Vec<UberSplat>, path: &Path) -> Result<()> {
     let json = serde_json::to_string_pretty(&splats)?;
     std::fs::write(path, json)?;
+    Ok(())
+}
+
+fn modify_splats(input: &Path, output: &Path, closure: impl Fn(&mut Vec<UberSplat>)) -> Result<()> {
+    let mut splats = load_splats(input)?;
+    closure(&mut splats);
+    let format = guess_format(output).unwrap();
+    save_splats(splats, format, output)?;
     Ok(())
 }
