@@ -41,7 +41,7 @@ impl SplatFormat for SplatC {
         if size % 26 == 0 {
             FormatResult::Maybe(Some(0.666))
         } else {
-            FormatResult::No(format!("Size is not a multiple of 26"))
+            FormatResult::No("Size is not a multiple of 26".to_string())
         }
     }
 

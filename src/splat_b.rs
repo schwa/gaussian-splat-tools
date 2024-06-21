@@ -35,10 +35,10 @@ impl SplatFormat for SplatB {
             return FormatResult::Maybe(Some(0.333));
         }
         let size = std::fs::metadata(path).unwrap().len();
-        if size % 32 as u64 == 0 {
+        if size % 32_u64 == 0 {
             FormatResult::Maybe(Some(0.666))
         } else {
-            FormatResult::No(format!("Size is not a multiple of 32"))
+            FormatResult::No("Size is not a multiple of 32".to_string())
         }
     }
 
