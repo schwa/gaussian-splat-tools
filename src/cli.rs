@@ -2,10 +2,11 @@ use crate::*;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use ply_rs as ply;
+use ply_rs::writer::Writer;
 use rand::prelude::*;
 use std::path::{Path, PathBuf};
+use tabled::builder::Builder;
 use tabled::{settings::Style, Table};
-use ply_rs::writer::{ Writer };
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -55,12 +56,17 @@ enum Commands {
         input: PathBuf,
     },
 
-    Ply2Ascii {
+    PlyToAscii {
         #[arg(short, long)]
         input: PathBuf,
 
         #[arg(short, long)]
         output: PathBuf,
+    },
+
+    DumpPly {
+        #[arg(short, long)]
+        input: PathBuf,
     },
 }
 
@@ -90,8 +96,11 @@ impl Cli {
             Some(Commands::Dump { input }) => {
                 Cli::dump(input)?;
             }
-            Some(Commands::Ply2Ascii { input, output }) => {
-                Cli::ply2ascii(input, output)?;
+            Some(Commands::PlyToAscii { input, output }) => {
+                Cli::ply_to_ascii(input, output)?;
+            }
+            Some(Commands::DumpPly { input }) => {
+                Cli::dump_ply(input)?;
             }
             None => {
                 println!("No command provided");
@@ -160,23 +169,82 @@ impl Cli {
         Ok(())
     }
 
-    fn ply2ascii(input: PathBuf, output: PathBuf) -> Result<()> {
-        // set up a reader, in this a file.
+    fn ply_to_ascii(input: PathBuf, output: PathBuf) -> Result<()> {
         let mut f = std::fs::File::open(input).unwrap();
-
-        // create a parser
         let p = ply::parser::Parser::<ply::ply::DefaultElement>::new();
-
-        // use the parser: read the entire file
         let mut ply = p.read_ply(&mut f).unwrap();
         ply.header.encoding = ply::ply::Encoding::Ascii;
-
         let mut buf = Vec::<u8>::new();
         let w = Writer::new();
-        let written = w.write_ply(&mut buf, &mut ply).unwrap();
-
-        // write the buffer to a file
+        w.write_ply(&mut buf, &mut ply).unwrap();
         std::fs::write(output, &buf).unwrap();
+        Ok(())
+    }
+
+    fn dump_ply(input: PathBuf) -> Result<()> {
+        let mut f = std::fs::File::open(input).unwrap();
+        let p = ply::parser::Parser::<ply::ply::DefaultElement>::new();
+        let ply = p.read_ply(&mut f).unwrap();
+
+        for (element, element_def) in &ply.header.elements {
+            println!("{}", element);
+
+            let property_names = element_def
+                .properties
+                .iter()
+                .map(|p| p.0.clone())
+                .collect::<Vec<String>>();
+
+            let mut builder = Builder::default();
+            builder.push_record(property_names);
+
+            for properties in ply.payload.get(element).unwrap() {
+                let values: Vec<String> = element_def
+                    .properties
+                    .iter()
+                    .map(|(property, _)| {
+                        let property = properties.get(property).unwrap();
+                        match property {
+                            ply::ply::Property::Char(v) => format!("{}", v),
+                            ply::ply::Property::UChar(v) => format!("{}", v),
+                            ply::ply::Property::Short(v) => format!("{}", v),
+                            ply::ply::Property::UShort(v) => format!("{}", v),
+                            ply::ply::Property::Int(v) => format!("{}", v),
+                            ply::ply::Property::UInt(v) => format!("{}", v),
+                            ply::ply::Property::Float(v) => format!("{}", v),
+                            ply::ply::Property::Double(v) => format!("{}", v),
+                            ply::ply::Property::ListFloat(v) => format!("{:?}", v),
+                            ply::ply::Property::ListDouble(v) => format!("{:?}", v),
+                            ply::ply::Property::ListChar(v) => format!("{:?}", v),
+                            ply::ply::Property::ListUChar(v) => format!("{:?}", v),
+                            ply::ply::Property::ListShort(v) => format!("{:?}", v),
+                            ply::ply::Property::ListUShort(v) => format!("{:?}", v),
+                            ply::ply::Property::ListInt(v) => format!("{:?}", v),
+                            ply::ply::Property::ListUInt(v) => format!("{:?}", v),
+                        }
+                    })
+                    .collect();
+                builder.push_record(&values);
+            }
+            // println!("{}", table);
+
+            // for (property, _) in &element_def.properties {
+
+            //     let values: Vec<String> = ply.payload.get(element).unwrap().iter().map(|payload| {
+            //         let value = format!("{:?}", payload.get(property).unwrap());
+            //         value
+            //     }).collect();
+            //     // builder.push_record(&values);
+
+            //     println!("{} {:?}", values.len(), values);
+
+            // }
+
+            let mut table = builder.build();
+            table.with(Style::rounded());
+            println!("{}", table);
+        }
+
         Ok(())
     }
 }
