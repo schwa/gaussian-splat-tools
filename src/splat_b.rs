@@ -26,7 +26,6 @@ fn test_splat_b_size() {
 }
 
 impl SplatFormat for SplatB {
-
     fn is_format(path: &Path) -> FormatResult {
         let extension = path.extension().unwrap().to_str().unwrap();
         if extension != "splat" {
@@ -39,10 +38,7 @@ impl SplatFormat for SplatB {
         if size % 32 as u64 == 0 {
             FormatResult::Maybe(Some(0.666))
         } else {
-            FormatResult::No(format!(
-                "Size is not a multiple of 32"
-
-            ))
+            FormatResult::No(format!("Size is not a multiple of 32"))
         }
     }
 

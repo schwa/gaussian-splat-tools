@@ -28,7 +28,6 @@ fn test_splat_c_size() {
 }
 
 impl SplatFormat for SplatC {
-
     fn is_format(path: &Path) -> FormatResult {
         if !path.exists() {
             let extension = path.extension().unwrap().to_str().unwrap();
@@ -42,9 +41,7 @@ impl SplatFormat for SplatC {
         if size % 26 == 0 {
             FormatResult::Maybe(Some(0.666))
         } else {
-            FormatResult::No(format!(
-                "Size is not a multiple of 26"
-            ))
+            FormatResult::No(format!("Size is not a multiple of 26"))
         }
     }
 
