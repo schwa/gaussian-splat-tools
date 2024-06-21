@@ -25,18 +25,9 @@ unsafe impl Pod for SplatC {}
 #[test]
 fn test_splat_c_size() {
     assert_eq!(std::mem::size_of::<SplatC>(), 26);
-    assert_eq!(SplatC::definition().size(), 26);
 }
 
 impl SplatFormat for SplatC {
-    fn definition() -> SplatDefinition {
-        SplatDefinition::new(vec![
-            Property::new("position".to_string(), false, Storage::Half3),
-            Property::new("color".to_string(), false, Storage::Half4),
-            Property::new("cov_a".to_string(), false, Storage::Half3),
-            Property::new("cov_b".to_string(), false, Storage::Half3),
-        ])
-    }
 
     fn is_format(path: &Path) -> FormatResult {
         if !path.exists() {
@@ -48,12 +39,11 @@ impl SplatFormat for SplatC {
         }
 
         let size = std::fs::metadata(path).unwrap().len();
-        if size % SplatC::definition().size() as u64 == 0 {
+        if size % 26 == 0 {
             FormatResult::Maybe(Some(0.666))
         } else {
             FormatResult::No(format!(
-                "Size is not a multiple of {}",
-                SplatC::definition().size()
+                "Size is not a multiple of 26"
             ))
         }
     }

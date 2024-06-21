@@ -21,10 +21,6 @@ pub struct SplatA {
 }
 
 impl SplatFormat for SplatA {
-    fn definition() -> SplatDefinition {
-        panic!("Not implemented");
-    }
-
     fn is_format(path: &Path) -> FormatResult {
         if path.extension().unwrap() == "ply" {
             // TODO: too simple

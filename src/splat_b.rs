@@ -23,42 +23,32 @@ unsafe impl Pod for SplatB {}
 #[test]
 fn test_splat_b_size() {
     assert_eq!(std::mem::size_of::<SplatB>(), 32);
-    assert_eq!(SplatB::definition().size(), 32);
 }
 
 impl SplatFormat for SplatB {
-    fn definition() -> SplatDefinition {
-        SplatDefinition::new(vec![
-            Property::new("position".to_string(), false, Storage::Float3),
-            Property::new("scale".to_string(), false, Storage::Float3),
-            Property::new("color".to_string(), false, Storage::Char4),
-            Property::new("rotation".to_string(), false, Storage::Char4),
-        ])
-    }
 
     fn is_format(path: &Path) -> FormatResult {
         let extension = path.extension().unwrap().to_str().unwrap();
         if extension != "splat" {
             return FormatResult::No("Extension is not splat".to_string());
         }
-        // if file exists
         if !path.exists() {
             return FormatResult::Maybe(Some(0.333));
         }
         let size = std::fs::metadata(path).unwrap().len();
-        if size % SplatB::definition().size() as u64 == 0 {
+        if size % 32 as u64 == 0 {
             FormatResult::Maybe(Some(0.666))
         } else {
             FormatResult::No(format!(
-                "Size is not a multiple of {}",
-                SplatB::definition().size()
+                "Size is not a multiple of 32"
+
             ))
         }
     }
 
     fn load(path: &Path) -> Result<Vec<UberSplat>> {
         let data = std::fs::read(path)?;
-        let chunk_size = SplatB::definition().size();
+        let chunk_size = 32;
         let splats = data
             .chunks_exact(chunk_size)
             .map(|chunk| {
@@ -116,11 +106,6 @@ impl From<SplatB> for UberSplat {
 
 impl From<UberSplat> for SplatB {
     fn from(uber_splat: UberSplat) -> Self {
-        // let color = Vector4::new(
-        //     uber_splat.color.to_linear_float().xyz(),
-        //     uber_splat.opacity.to_linear_u8(),
-        // );
-
         let rgb = uber_splat.color.to_linear_u8();
         let alpha = uber_splat.opacity.to_linear_u8();
         let color = Vector4::new(rgb.x, rgb.y, rgb.z, alpha);
