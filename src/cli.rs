@@ -2,7 +2,7 @@ use crate::*;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
 use humansize::{format_size, DECIMAL};
-use nalgebra::{Vector3};
+use nalgebra::Vector3;
 use ply_rs as ply;
 use ply_rs::writer::Writer;
 use rand::prelude::*;
