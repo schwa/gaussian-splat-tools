@@ -1,8 +1,11 @@
 use crate::*;
 use anyhow::Result;
 use clap::{Parser, Subcommand};
+use ply_rs as ply;
 use rand::prelude::*;
 use std::path::{Path, PathBuf};
+use tabled::{settings::Style, Table};
+use ply_rs::writer::{ Writer };
 
 #[derive(Parser)]
 #[command(version, about, long_about = None)]
@@ -51,6 +54,14 @@ enum Commands {
         #[arg(short, long)]
         input: PathBuf,
     },
+
+    Ply2Ascii {
+        #[arg(short, long)]
+        input: PathBuf,
+
+        #[arg(short, long)]
+        output: PathBuf,
+    },
 }
 
 impl Cli {
@@ -78,6 +89,9 @@ impl Cli {
             }
             Some(Commands::Dump { input }) => {
                 Cli::dump(input)?;
+            }
+            Some(Commands::Ply2Ascii { input, output }) => {
+                Cli::ply2ascii(input, output)?;
             }
             None => {
                 println!("No command provided");
@@ -139,9 +153,30 @@ impl Cli {
 
     fn dump(input: PathBuf) -> Result<()> {
         let splats = load_splats(&input)?;
-        for splat in splats {
-            println!("{:?}", splat);
-        }
+
+        let table = Table::new(splats).with(Style::modern()).to_string();
+        println!("{}", table);
+
+        Ok(())
+    }
+
+    fn ply2ascii(input: PathBuf, output: PathBuf) -> Result<()> {
+        // set up a reader, in this a file.
+        let mut f = std::fs::File::open(input).unwrap();
+
+        // create a parser
+        let p = ply::parser::Parser::<ply::ply::DefaultElement>::new();
+
+        // use the parser: read the entire file
+        let mut ply = p.read_ply(&mut f).unwrap();
+        ply.header.encoding = ply::ply::Encoding::Ascii;
+
+        let mut buf = Vec::<u8>::new();
+        let w = Writer::new();
+        let written = w.write_ply(&mut buf, &mut ply).unwrap();
+
+        // write the buffer to a file
+        std::fs::write(output, &buf).unwrap();
         Ok(())
     }
 }
